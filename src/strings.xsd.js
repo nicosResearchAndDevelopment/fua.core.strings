@@ -111,9 +111,8 @@ xsd.float = {
 };
 
 xsd.date = {
-    pattern:    /^-?[1-9][0-9]*-(?:1[0-2]|0[1-9])-(?:3[01]|[12][0-9]|0[1-9])(?:[+-](?:1[0-2]|0[0-9]):[0-5][0-9]|Z)?$/,
-    tz_pattern: /^-?[1-9][0-9]*-(?:1[0-2]|0[1-9])-(?:3[01]|[12][0-9]|0[1-9])(?:[+-](?:1[0-2]|0[0-9]):[0-5][0-9]|Z)$/,
-    matcher:    /^(-?[1-9][0-9]*)-(1[0-2]|0[1-9])-(3[01]|[12][0-9]|0[1-9])(?:([+-])(1[0-2]|0[0-9]):([0-5][0-9])|(Z))?$/,
+    pattern: /^-?[1-9][0-9]*-(?:1[0-2]|0[1-9])-(?:3[01]|[12][0-9]|0[1-9])(?:[+-](?:1[0-2]|0[0-9]):[0-5][0-9]|Z)?$/,
+    matcher: /^(-?[1-9][0-9]*)-(1[0-2]|0[1-9])-(3[01]|[12][0-9]|0[1-9])(?:([+-])(1[0-2]|0[0-9]):([0-5][0-9])|(Z))?$/,
     /**
      * @param {string} value
      * @returns {boolean}
@@ -159,13 +158,86 @@ xsd.date = {
             if (match.utc_tag || result.offset === 0) result.utc = true;
             return result;
         }
+    },
+    timeZone: {
+        pattern: /^-?[1-9][0-9]*-(?:1[0-2]|0[1-9])-(?:3[01]|[12][0-9]|0[1-9])(?:[+-](?:1[0-2]|0[0-9]):[0-5][0-9]|Z)$/,
+        matcher: /^(-?[1-9][0-9]*)-(1[0-2]|0[1-9])-(3[01]|[12][0-9]|0[1-9])(?:([+-])(1[0-2]|0[0-9]):([0-5][0-9])|(Z))$/,
+        /**
+         * @param {string} value
+         * @returns {boolean}
+         */
+        test(value) {
+            return xsd.date.timeZone.pattern.test(value);
+        }
+    }
+};
+
+xsd.time = {
+    pattern: /^(?:2[0-3]|[01][0-9]):[0-5][0-9]:[0-5][0-9](?:\.[0-9]+)?(?:[+-](?:1[0-2]|0[0-9]):[0-5][0-9]|Z)?$/,
+    matcher: /^(2[0-3]|[01][0-9]):([0-5][0-9]):([0-5][0-9](?:\.[0-9]+)?)(?:([+-])(1[0-2]|0[0-9]):([0-5][0-9])|(Z))?$/,
+    /**
+     * @param {string} value
+     * @returns {boolean}
+     */
+    test(value) {
+        return xsd.time.pattern.test(value);
+    },
+    /**
+     * @param {string} value
+     * @returns {{
+     *     hh: string,
+     *     mm: string,
+     *     ss_ms: string,
+     *     tz_sign?: string,
+     *     tz_hh?: string,
+     *     tz_mm?: string,
+     *     utc_tag?: string
+     * }}
+     */
+    match(value) {
+        const [match, hh, mm, ss_ms, tz_sign, tz_hh, tz_mm, utc_tag] = xsd.time.matcher.exec(value) || [];
+        if (match) return {hh, mm, ss_ms, tz_sign, tz_hh, tz_mm, utc_tag};
+    },
+    /**
+     * @param {string} value
+     * @returns {{
+     *     hour: number,
+     *     minute: number,
+     *     second: number,
+     *     millisecond: number,
+     *     offset?: number,
+     *     utc?: boolean
+     * }}
+     */
+    parse(value) {
+        const match = xsd.time.match(value);
+        if (match) {
+            const result       = {
+                hour:   parseInt(match.hh),
+                minute: parseInt(match.mm),
+                second: parseInt(match.ss_ms)
+            };
+            result.millisecond = Math.round(1000 * (parseFloat(match.ss_ms) - result.second));
+            if (match.tz_sign) result.offset = (match.tz_sign === '-' ? -1 : 1) * (60 * parseInt(match.tz_hh) + parseInt(match.tz_mm));
+            if (match.utc_tag || result.offset === 0) result.utc = true;
+            return result;
+        }
+    },
+    timeZone: {
+        pattern: /^(?:2[0-3]|[01][0-9]):[0-5][0-9]:[0-5][0-9](?:\.[0-9]+)?(?:[+-](?:1[0-2]|0[0-9]):[0-5][0-9]|Z)$/,
+        /**
+         * @param {string} value
+         * @returns {boolean}
+         */
+        test(value) {
+            return xsd.time.timeZone.pattern.test(value);
+        }
     }
 };
 
 xsd.dateTime = {
-    pattern:    /^-?[1-9][0-9]*-(?:1[0-2]|0[1-9])-(?:3[01]|[12][0-9]|0[1-9])T(?:2[0-3]|[01][0-9]):[0-5][0-9]:[0-5][0-9](?:\.[0-9]+)?(?:[+-](?:1[0-2]|0[0-9]):[0-5][0-9]|Z)?$/,
-    tz_pattern: /^-?[1-9][0-9]*-(?:1[0-2]|0[1-9])-(?:3[01]|[12][0-9]|0[1-9])T(?:2[0-3]|[01][0-9]):[0-5][0-9]:[0-5][0-9](?:\.[0-9]+)?(?:[+-](?:1[0-2]|0[0-9]):[0-5][0-9]|Z)$/,
-    matcher:    /^(-?[1-9][0-9]*)-(1[0-2]|0[1-9])-(3[01]|[12][0-9]|0[1-9])T(2[0-3]|[01][0-9]):([0-5][0-9]):([0-5][0-9](?:\.[0-9]+)?)(?:([+-])(1[0-2]|0[0-9]):([0-5][0-9])|(Z))?$/,
+    pattern: /^-?[1-9][0-9]*-(?:1[0-2]|0[1-9])-(?:3[01]|[12][0-9]|0[1-9])T(?:2[0-3]|[01][0-9]):[0-5][0-9]:[0-5][0-9](?:\.[0-9]+)?(?:[+-](?:1[0-2]|0[0-9]):[0-5][0-9]|Z)?$/,
+    matcher: /^(-?[1-9][0-9]*)-(1[0-2]|0[1-9])-(3[01]|[12][0-9]|0[1-9])T(2[0-3]|[01][0-9]):([0-5][0-9]):([0-5][0-9](?:\.[0-9]+)?)(?:([+-])(1[0-2]|0[0-9]):([0-5][0-9])|(Z))?$/,
     /**
      * @param {string} value
      * @returns {boolean}
@@ -222,6 +294,16 @@ xsd.dateTime = {
             if (match.utc_tag || result.offset === 0) result.utc = true;
             return result;
         }
+    },
+    timeZone: {
+        pattern: /^-?[1-9][0-9]*-(?:1[0-2]|0[1-9])-(?:3[01]|[12][0-9]|0[1-9])T(?:2[0-3]|[01][0-9]):[0-5][0-9]:[0-5][0-9](?:\.[0-9]+)?(?:[+-](?:1[0-2]|0[0-9]):[0-5][0-9]|Z)$/,
+        /**
+         * @param {string} value
+         * @returns {boolean}
+         */
+        test(value) {
+            return xsd.dateTime.timeZone.pattern.test(value);
+        }
     }
 };
 
@@ -275,6 +357,287 @@ xsd.dateTimeStamp = {
             };
             result.millisecond = Math.round(1000 * (parseFloat(match.ss_ms) - result.second));
             return result;
+        }
+    }
+};
+
+xsd.gYear = {
+    pattern: /^-?[1-9][0-9]*(?:[+-](?:1[0-2]|0[0-9]):[0-5][0-9]|Z)?$/,
+    matcher: /^(-?[1-9][0-9]*)(?:([+-])(1[0-2]|0[0-9]):([0-5][0-9])|(Z))?$/,
+    /**
+     * @param {string} value
+     * @returns {boolean}
+     */
+    test(value) {
+        return xsd.gYear.pattern.test(value);
+    },
+    /**
+     * @param {string} value
+     * @returns {{
+     *     YYYY: string,
+     *     tz_sign?: string,
+     *     tz_hh?: string,
+     *     tz_mm?: string,
+     *     utc_tag?: string
+     * }}
+     */
+    match(value) {
+        const [match, YYYY, tz_sign, tz_hh, tz_mm, utc_tag] = xsd.gYear.matcher.exec(value) || [];
+        if (match) return {YYYY, tz_sign, tz_hh, tz_mm, utc_tag};
+    },
+    /**
+     * @param {string} value
+     * @returns {{
+     *     year: number,
+     *     offset?: number,
+     *     utc?: boolean
+     * }}
+     */
+    parse(value) {
+        const match = xsd.gYear.match(value);
+        if (match) {
+            const result = {
+                year: parseInt(match.YYYY)
+            };
+            if (match.tz_sign) result.offset = (match.tz_sign === '-' ? -1 : 1) * (60 * parseInt(match.tz_hh) + parseInt(match.tz_mm));
+            if (match.utc_tag || result.offset === 0) result.utc = true;
+            return result;
+        }
+    },
+    timeZone: {
+        pattern: /^-?[1-9][0-9]*(?:[+-](?:1[0-2]|0[0-9]):[0-5][0-9]|Z)$/,
+        /**
+         * @param {string} value
+         * @returns {boolean}
+         */
+        test(value) {
+            return xsd.gYear.timeZone.pattern.test(value);
+        }
+    }
+};
+
+xsd.gMonth = {
+    pattern: /^--(?:1[0-2]|0[1-9])(?:[+-](?:1[0-2]|0[0-9]):[0-5][0-9]|Z)?$/,
+    matcher: /^--(1[0-2]|0[1-9])(?:([+-])(1[0-2]|0[0-9]):([0-5][0-9])|(Z))?$/,
+    /**
+     * @param {string} value
+     * @returns {boolean}
+     */
+    test(value) {
+        return xsd.gMonth.pattern.test(value);
+    },
+    /**
+     * @param {string} value
+     * @returns {{
+     *     MM: string,
+     *     tz_sign?: string,
+     *     tz_hh?: string,
+     *     tz_mm?: string,
+     *     utc_tag?: string
+     * }}
+     */
+    match(value) {
+        const [match, MM, tz_sign, tz_hh, tz_mm, utc_tag] = xsd.gMonth.matcher.exec(value) || [];
+        if (match) return {MM, tz_sign, tz_hh, tz_mm, utc_tag};
+    },
+    /**
+     * @param {string} value
+     * @returns {{
+     *     month: number,
+     *     offset?: number,
+     *     utc?: boolean
+     * }}
+     */
+    parse(value) {
+        const match = xsd.gMonth.match(value);
+        if (match) {
+            const result = {
+                month: parseInt(match.MM)
+            };
+            if (match.tz_sign) result.offset = (match.tz_sign === '-' ? -1 : 1) * (60 * parseInt(match.tz_hh) + parseInt(match.tz_mm));
+            if (match.utc_tag || result.offset === 0) result.utc = true;
+            return result;
+        }
+    },
+    timeZone: {
+        pattern: /^--(?:1[0-2]|0[1-9])(?:[+-](?:1[0-2]|0[0-9]):[0-5][0-9]|Z)$/,
+        /**
+         * @param {string} value
+         * @returns {boolean}
+         */
+        test(value) {
+            return xsd.gMonth.timeZone.pattern.test(value);
+        }
+    }
+};
+
+xsd.gDay = {
+    pattern: /^---(?:3[01]|[12][0-9]|0[1-9])(?:[+-](?:1[0-2]|0[0-9]):[0-5][0-9]|Z)?$/,
+    matcher: /^---(3[01]|[12][0-9]|0[1-9])(?:([+-])(1[0-2]|0[0-9]):([0-5][0-9])|(Z))?$/,
+    /**
+     * @param {string} value
+     * @returns {boolean}
+     */
+    test(value) {
+        return xsd.gDay.pattern.test(value);
+    },
+    /**
+     * @param {string} value
+     * @returns {{
+     *     DD: string,
+     *     tz_sign?: string,
+     *     tz_hh?: string,
+     *     tz_mm?: string,
+     *     utc_tag?: string
+     * }}
+     */
+    match(value) {
+        const [match, DD, tz_sign, tz_hh, tz_mm, utc_tag] = xsd.gDay.matcher.exec(value) || [];
+        if (match) return {DD, tz_sign, tz_hh, tz_mm, utc_tag};
+    },
+    /**
+     * @param {string} value
+     * @returns {{
+     *     day: number,
+     *     offset?: number,
+     *     utc?: boolean
+     * }}
+     */
+    parse(value) {
+        const match = xsd.gDay.match(value);
+        if (match) {
+            const result = {
+                day: parseInt(match.DD)
+            };
+            if (match.tz_sign) result.offset = (match.tz_sign === '-' ? -1 : 1) * (60 * parseInt(match.tz_hh) + parseInt(match.tz_mm));
+            if (match.utc_tag || result.offset === 0) result.utc = true;
+            return result;
+        }
+    },
+    timeZone: {
+        pattern: /^---(?:3[01]|[12][0-9]|0[1-9])(?:[+-](?:1[0-2]|0[0-9]):[0-5][0-9]|Z)$/,
+        /**
+         * @param {string} value
+         * @returns {boolean}
+         */
+        test(value) {
+            return xsd.gDay.timeZone.pattern.test(value);
+        }
+    }
+};
+
+xsd.gYearMonth = {
+    pattern: /^-?[1-9][0-9]*-(?:1[0-2]|0[1-9])(?:[+-](?:1[0-2]|0[0-9]):[0-5][0-9]|Z)?$/,
+    matcher: /^(-?[1-9][0-9]*)-(1[0-2]|0[1-9])(?:([+-])(1[0-2]|0[0-9]):([0-5][0-9])|(Z))?$/,
+    /**
+     * @param {string} value
+     * @returns {boolean}
+     */
+    test(value) {
+        return xsd.gYearMonth.pattern.test(value);
+    },
+    /**
+     * @param {string} value
+     * @returns {{
+     *     YYYY: string,
+     *     MM: string,
+     *     tz_sign?: string,
+     *     tz_hh?: string,
+     *     tz_mm?: string,
+     *     utc_tag?: string
+     * }}
+     */
+    match(value) {
+        const [match, YYYY, MM, tz_sign, tz_hh, tz_mm, utc_tag] = xsd.gYearMonth.matcher.exec(value) || [];
+        if (match) return {YYYY, MM, tz_sign, tz_hh, tz_mm, utc_tag};
+    },
+    /**
+     * @param {string} value
+     * @returns {{
+     *     year: number,
+     *     month: number,
+     *     offset?: number,
+     *     utc?: boolean
+     * }}
+     */
+    parse(value) {
+        const match = xsd.gYearMonth.match(value);
+        if (match) {
+            const result = {
+                year:  parseInt(match.YYYY),
+                month: parseInt(match.MM)
+            };
+            if (match.tz_sign) result.offset = (match.tz_sign === '-' ? -1 : 1) * (60 * parseInt(match.tz_hh) + parseInt(match.tz_mm));
+            if (match.utc_tag || result.offset === 0) result.utc = true;
+            return result;
+        }
+    },
+    timeZone: {
+        pattern: /^-?[1-9][0-9]*-(?:1[0-2]|0[1-9])(?:[+-](?:1[0-2]|0[0-9]):[0-5][0-9]|Z)$/,
+        /**
+         * @param {string} value
+         * @returns {boolean}
+         */
+        test(value) {
+            return xsd.gYearMonth.timeZone.pattern.test(value);
+        }
+    }
+};
+
+xsd.gMonthDay = {
+    pattern: /^--(?:1[0-2]|0[1-9])-(?:3[01]|[12][0-9]|0[1-9])(?:[+-](?:1[0-2]|0[0-9]):[0-5][0-9]|Z)?$/,
+    matcher: /^--(1[0-2]|0[1-9])-(3[01]|[12][0-9]|0[1-9])(?:([+-])(1[0-2]|0[0-9]):([0-5][0-9])|(Z))?$/,
+    /**
+     * @param {string} value
+     * @returns {boolean}
+     */
+    test(value) {
+        return xsd.gMonthDay.pattern.test(value);
+    },
+    /**
+     * @param {string} value
+     * @returns {{
+     *     MM: string,
+     *     DD: string,
+     *     tz_sign?: string,
+     *     tz_hh?: string,
+     *     tz_mm?: string,
+     *     utc_tag?: string
+     * }}
+     */
+    match(value) {
+        const [match, MM, DD, tz_sign, tz_hh, tz_mm, utc_tag] = xsd.gMonthDay.matcher.exec(value) || [];
+        if (match) return {MM, DD, tz_sign, tz_hh, tz_mm, utc_tag};
+    },
+    /**
+     * @param {string} value
+     * @returns {{
+     *     month: number,
+     *     day: number,
+     *     offset?: number,
+     *     utc?: boolean
+     * }}
+     */
+    parse(value) {
+        const match = xsd.gMonthDay.match(value);
+        if (match) {
+            const result = {
+                month: parseInt(match.MM),
+                day:   parseInt(match.DD)
+            };
+            if (match.tz_sign) result.offset = (match.tz_sign === '-' ? -1 : 1) * (60 * parseInt(match.tz_hh) + parseInt(match.tz_mm));
+            if (match.utc_tag || result.offset === 0) result.utc = true;
+            return result;
+        }
+    },
+    timeZone: {
+        pattern: /^--(?:1[0-2]|0[1-9])-(?:3[01]|[12][0-9]|0[1-9])(?:[+-](?:1[0-2]|0[0-9]):[0-5][0-9]|Z)$/,
+        /**
+         * @param {string} value
+         * @returns {boolean}
+         */
+        test(value) {
+            return xsd.gMonthDay.timeZone.pattern.test(value);
         }
     }
 };
@@ -336,21 +699,19 @@ xsd.duration = {
     }
 };
 
-xsd.gDay = {
-    pattern:    /^---(?:3[01]|[12][0-9]|0[1-9])(?:[+-](?:1[0-2]|0[0-9]):[0-5][0-9]|Z)?$/,
-    tz_pattern: /^---(?:3[01]|[12][0-9]|0[1-9])(?:[+-](?:1[0-2]|0[0-9]):[0-5][0-9]|Z)$/,
-    matcher:    /^---(3[01]|[12][0-9]|0[1-9])(?:([+-])(1[0-2]|0[0-9]):([0-5][0-9])|(Z))?$/,
+xsd.timeZone = {
+    pattern: /^(?:[+-](?:1[0-2]|0[0-9]):[0-5][0-9]|Z)$/,
+    matcher: /^(?:([+-])(1[0-2]|0[0-9]):([0-5][0-9])|(Z))$/,
     /**
      * @param {string} value
      * @returns {boolean}
      */
     test(value) {
-        return xsd.gDay.pattern.test(value);
+        return xsd.timeZone.pattern.test(value);
     },
     /**
      * @param {string} value
      * @returns {{
-     *     DD: string,
      *     tz_sign?: string,
      *     tz_hh?: string,
      *     tz_mm?: string,
@@ -358,267 +719,20 @@ xsd.gDay = {
      * }}
      */
     match(value) {
-        const [match, DD, tz_sign, tz_hh, tz_mm, utc_tag] = xsd.gDay.matcher.exec(value) || [];
-        if (match) return {DD, tz_sign, tz_hh, tz_mm, utc_tag};
+        const [match, tz_sign, tz_hh, tz_mm, utc_tag] = xsd.timeZone.matcher.exec(value) || [];
+        if (match) return {tz_sign, tz_hh, tz_mm, utc_tag};
     },
     /**
      * @param {string} value
      * @returns {{
-     *     day: number,
      *     offset?: number,
      *     utc?: boolean
      * }}
      */
     parse(value) {
-        const match = xsd.gDay.match(value);
+        const match = xsd.timeZone.match(value);
         if (match) {
-            const result = {
-                day: parseInt(match.DD)
-            };
-            if (match.tz_sign) result.offset = (match.tz_sign === '-' ? -1 : 1) * (60 * parseInt(match.tz_hh) + parseInt(match.tz_mm));
-            if (match.utc_tag || result.offset === 0) result.utc = true;
-            return result;
-        }
-    }
-};
-
-xsd.gMonth = {
-    pattern:    /^--(?:1[0-2]|0[1-9])(?:[+-](?:1[0-2]|0[0-9]):[0-5][0-9]|Z)?$/,
-    tz_pattern: /^--(?:1[0-2]|0[1-9])(?:[+-](?:1[0-2]|0[0-9]):[0-5][0-9]|Z)$/,
-    matcher:    /^--(1[0-2]|0[1-9])(?:([+-])(1[0-2]|0[0-9]):([0-5][0-9])|(Z))?$/,
-    /**
-     * @param {string} value
-     * @returns {boolean}
-     */
-    test(value) {
-        return xsd.gMonth.pattern.test(value);
-    },
-    /**
-     * @param {string} value
-     * @returns {{
-     *     MM: string,
-     *     tz_sign?: string,
-     *     tz_hh?: string,
-     *     tz_mm?: string,
-     *     utc_tag?: string
-     * }}
-     */
-    match(value) {
-        const [match, MM, tz_sign, tz_hh, tz_mm, utc_tag] = xsd.gMonth.matcher.exec(value) || [];
-        if (match) return {MM, tz_sign, tz_hh, tz_mm, utc_tag};
-    },
-    /**
-     * @param {string} value
-     * @returns {{
-     *     month: number,
-     *     offset?: number,
-     *     utc?: boolean
-     * }}
-     */
-    parse(value) {
-        const match = xsd.gMonth.match(value);
-        if (match) {
-            const result = {
-                month: parseInt(match.MM)
-            };
-            if (match.tz_sign) result.offset = (match.tz_sign === '-' ? -1 : 1) * (60 * parseInt(match.tz_hh) + parseInt(match.tz_mm));
-            if (match.utc_tag || result.offset === 0) result.utc = true;
-            return result;
-        }
-    }
-};
-
-xsd.gMonthDay = {
-    pattern:    /^--(?:1[0-2]|0[1-9])-(?:3[01]|[12][0-9]|0[1-9])(?:[+-](?:1[0-2]|0[0-9]):[0-5][0-9]|Z)?$/,
-    tz_pattern: /^--(?:1[0-2]|0[1-9])-(?:3[01]|[12][0-9]|0[1-9])(?:[+-](?:1[0-2]|0[0-9]):[0-5][0-9]|Z)$/,
-    matcher:    /^--(1[0-2]|0[1-9])-(3[01]|[12][0-9]|0[1-9])(?:([+-])(1[0-2]|0[0-9]):([0-5][0-9])|(Z))?$/,
-    /**
-     * @param {string} value
-     * @returns {boolean}
-     */
-    test(value) {
-        return xsd.gMonthDay.pattern.test(value);
-    },
-    /**
-     * @param {string} value
-     * @returns {{
-     *     MM: string,
-     *     DD: string,
-     *     tz_sign?: string,
-     *     tz_hh?: string,
-     *     tz_mm?: string,
-     *     utc_tag?: string
-     * }}
-     */
-    match(value) {
-        const [match, MM, DD, tz_sign, tz_hh, tz_mm, utc_tag] = xsd.gMonthDay.matcher.exec(value) || [];
-        if (match) return {MM, DD, tz_sign, tz_hh, tz_mm, utc_tag};
-    },
-    /**
-     * @param {string} value
-     * @returns {{
-     *     month: number,
-     *     day: number,
-     *     offset?: number,
-     *     utc?: boolean
-     * }}
-     */
-    parse(value) {
-        const match = xsd.gMonthDay.match(value);
-        if (match) {
-            const result = {
-                month: parseInt(match.MM),
-                day:   parseInt(match.DD)
-            };
-            if (match.tz_sign) result.offset = (match.tz_sign === '-' ? -1 : 1) * (60 * parseInt(match.tz_hh) + parseInt(match.tz_mm));
-            if (match.utc_tag || result.offset === 0) result.utc = true;
-            return result;
-        }
-    }
-};
-
-xsd.gYear = {
-    pattern:    /^-?[1-9][0-9]*(?:[+-](?:1[0-2]|0[0-9]):[0-5][0-9]|Z)?$/,
-    tz_pattern: /^-?[1-9][0-9]*(?:[+-](?:1[0-2]|0[0-9]):[0-5][0-9]|Z)$/,
-    matcher:    /^(-?[1-9][0-9]*)(?:([+-])(1[0-2]|0[0-9]):([0-5][0-9])|(Z))?$/,
-    /**
-     * @param {string} value
-     * @returns {boolean}
-     */
-    test(value) {
-        return xsd.gYear.pattern.test(value);
-    },
-    /**
-     * @param {string} value
-     * @returns {{
-     *     YYYY: string,
-     *     tz_sign?: string,
-     *     tz_hh?: string,
-     *     tz_mm?: string,
-     *     utc_tag?: string
-     * }}
-     */
-    match(value) {
-        const [match, YYYY, tz_sign, tz_hh, tz_mm, utc_tag] = xsd.gYear.matcher.exec(value) || [];
-        if (match) return {YYYY, tz_sign, tz_hh, tz_mm, utc_tag};
-    },
-    /**
-     * @param {string} value
-     * @returns {{
-     *     year: number,
-     *     offset?: number,
-     *     utc?: boolean
-     * }}
-     */
-    parse(value) {
-        const match = xsd.gYear.match(value);
-        if (match) {
-            const result = {
-                year: parseInt(match.YYYY)
-            };
-            if (match.tz_sign) result.offset = (match.tz_sign === '-' ? -1 : 1) * (60 * parseInt(match.tz_hh) + parseInt(match.tz_mm));
-            if (match.utc_tag || result.offset === 0) result.utc = true;
-            return result;
-        }
-    }
-};
-
-xsd.gYearMonth = {
-    pattern:    /^-?[1-9][0-9]*-(?:1[0-2]|0[1-9])(?:[+-](?:1[0-2]|0[0-9]):[0-5][0-9]|Z)?$/,
-    tz_pattern: /^-?[1-9][0-9]*-(?:1[0-2]|0[1-9])(?:[+-](?:1[0-2]|0[0-9]):[0-5][0-9]|Z)$/,
-    matcher:    /^(-?[1-9][0-9]*)-(1[0-2]|0[1-9])(?:([+-])(1[0-2]|0[0-9]):([0-5][0-9])|(Z))?$/,
-    /**
-     * @param {string} value
-     * @returns {boolean}
-     */
-    test(value) {
-        return xsd.gYearMonth.pattern.test(value);
-    },
-    /**
-     * @param {string} value
-     * @returns {{
-     *     YYYY: string,
-     *     MM: string,
-     *     tz_sign?: string,
-     *     tz_hh?: string,
-     *     tz_mm?: string,
-     *     utc_tag?: string
-     * }}
-     */
-    match(value) {
-        const [match, YYYY, MM, tz_sign, tz_hh, tz_mm, utc_tag] = xsd.gYearMonth.matcher.exec(value) || [];
-        if (match) return {YYYY, MM, tz_sign, tz_hh, tz_mm, utc_tag};
-    },
-    /**
-     * @param {string} value
-     * @returns {{
-     *     year: number,
-     *     month: number,
-     *     offset?: number,
-     *     utc?: boolean
-     * }}
-     */
-    parse(value) {
-        const match = xsd.gYearMonth.match(value);
-        if (match) {
-            const result = {
-                year:  parseInt(match.YYYY),
-                month: parseInt(match.MM)
-            };
-            if (match.tz_sign) result.offset = (match.tz_sign === '-' ? -1 : 1) * (60 * parseInt(match.tz_hh) + parseInt(match.tz_mm));
-            if (match.utc_tag || result.offset === 0) result.utc = true;
-            return result;
-        }
-    }
-};
-
-xsd.time = {
-    pattern:    /^(?:2[0-3]|[01][0-9]):[0-5][0-9]:[0-5][0-9](?:\.[0-9]+)?(?:[+-](?:1[0-2]|0[0-9]):[0-5][0-9]|Z)?$/,
-    tz_pattern: /^(?:2[0-3]|[01][0-9]):[0-5][0-9]:[0-5][0-9](?:\.[0-9]+)?(?:[+-](?:1[0-2]|0[0-9]):[0-5][0-9]|Z)$/,
-    matcher:    /^(2[0-3]|[01][0-9]):([0-5][0-9]):([0-5][0-9](?:\.[0-9]+)?)(?:([+-])(1[0-2]|0[0-9]):([0-5][0-9])|(Z))?$/,
-    /**
-     * @param {string} value
-     * @returns {boolean}
-     */
-    test(value) {
-        return xsd.time.pattern.test(value);
-    },
-    /**
-     * @param {string} value
-     * @returns {{
-     *     hh: string,
-     *     mm: string,
-     *     ss_ms: string,
-     *     tz_sign?: string,
-     *     tz_hh?: string,
-     *     tz_mm?: string,
-     *     utc_tag?: string
-     * }}
-     */
-    match(value) {
-        const [match, hh, mm, ss_ms, tz_sign, tz_hh, tz_mm, utc_tag] = xsd.time.matcher.exec(value) || [];
-        if (match) return {hh, mm, ss_ms, tz_sign, tz_hh, tz_mm, utc_tag};
-    },
-    /**
-     * @param {string} value
-     * @returns {{
-     *     hour: number,
-     *     minute: number,
-     *     second: number,
-     *     millisecond: number,
-     *     offset?: number,
-     *     utc?: boolean
-     * }}
-     */
-    parse(value) {
-        const match = xsd.time.match(value);
-        if (match) {
-            const result       = {
-                hour:   parseInt(match.hh),
-                minute: parseInt(match.mm),
-                second: parseInt(match.ss_ms)
-            };
-            result.millisecond = Math.round(1000 * (parseFloat(match.ss_ms) - result.second));
+            const result = {};
             if (match.tz_sign) result.offset = (match.tz_sign === '-' ? -1 : 1) * (60 * parseInt(match.tz_hh) + parseInt(match.tz_mm));
             if (match.utc_tag || result.offset === 0) result.utc = true;
             return result;
