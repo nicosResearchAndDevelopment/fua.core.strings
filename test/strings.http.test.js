@@ -58,6 +58,18 @@ describe('fua.core.strings.http', function () {
 
         });
 
+        describe('accept', function() {
+
+            const accept = headers?.accept;
+
+            test('match', function() {
+
+                accept.match('text/*, text/html; charset=utf-8; boundary=something , */* ; test=""');
+
+            });
+
+        });
+
     });
 
 });

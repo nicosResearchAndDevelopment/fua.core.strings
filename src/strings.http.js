@@ -54,6 +54,21 @@ http.headers = {
         }
     },
 
-    accept: {}
+    accept: {
+        matcher: /(\*\/\*|[!#$%&'*+\-.^_`|~0-9A-Za-z]+\/(?:\*|[!#$%&'*+\-.^_`|~0-9A-Za-z]+))(?:[ \t]*;[ \t]*([^,]+?)(?=$|[ \t]*,))?(?:$|[ \t]*,[ \t]*)/gy,
+        match(value) {
+            const result                          = [];
+            let matchedLength                     = 0;
+            http.headers.accept.matcher.lastIndex = 0;
+            for (let match of value.matchAll(http.headers.accept.matcher)) {
+                matchedLength = match.index + match[0].length;
+                result.push(match[1], match[2] || '');
+            }
+            http.headers.accept.matcher.lastIndex = 0;
+            if (matchedLength === value.length) console.log('success', result);
+            else console.log('failure', result);
+            throw new Error('TODO'); // TODO
+        }
+    }
 
 };
