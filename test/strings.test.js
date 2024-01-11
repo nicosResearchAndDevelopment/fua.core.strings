@@ -15,4 +15,36 @@ describe('fua.core.strings', function () {
         console.log(strings.web.email.match('test@example.com'));
     });
 
+    describe('http', function () {
+
+        describe('headers', function () {
+
+            test('contentType', function () {
+                const contentType = strings?.http?.headers?.contentType;
+                expect(contentType).toBeTruthy();
+
+                expect(contentType.pattern).toBeInstanceOf(RegExp);
+                expect(typeof contentType.test).toBe('function');
+                expect(typeof contentType.match).toBe('function');
+                expect(typeof contentType.parse).toBe('function');
+
+                expect(contentType.test('Hello World!')).toBe(false);
+                expect(contentType.test('text/plain')).toBe(true);
+
+                expect(
+                    contentType.parse('text/html; charset=utf-8; boundary=something; literal="Hello World!"; literal=""')
+                ).toEqual({
+                    format: 'text/html',
+                    param:  {
+                        charset:  'utf-8',
+                        boundary: 'something',
+                        literal:  ['Hello World!', '']
+                    }
+                });
+            });
+
+        });
+
+    });
+
 });

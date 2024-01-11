@@ -1,8 +1,9 @@
 const strings = exports;
 
-strings.xsd = require('./strings.xsd.js');
-strings.opc = require('./strings.opc.js');
-strings.web = require('./strings.web.js');
+strings.xsd  = require('./strings.xsd.js');
+strings.opc  = require('./strings.opc.js');
+strings.http = require('./strings.http.js');
+strings.web  = require('./strings.web.js');
 
 /**
  * @param {string | Buffer} value
@@ -31,7 +32,7 @@ strings.toRegExp = function (value, flags) {
 (function freeze(target) {
     Object.freeze(target);
     Object.values(target)
-        .filter(value => value instanceof Object)
+        .filter(value => (value instanceof Object) && !(value instanceof RegExp))
         .forEach(freeze);
 })(strings);
 module.exports = strings;
