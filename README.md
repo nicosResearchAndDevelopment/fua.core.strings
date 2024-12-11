@@ -1,1 +1,1 @@
-# @nrd/fua.core.strings
+# @fua/core.strings

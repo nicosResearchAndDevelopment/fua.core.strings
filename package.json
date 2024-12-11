@@ -1,5 +1,5 @@
 {
-  "name": "@nrd/fua.core.strings",
+  "name": "@fua/core.strings",
   "version": "1.0.2",
   "description": "",
   "main": "src/strings.js",
@@ -20,8 +20,8 @@
   },
   "repository": {
     "type": "git",
-    "url": "ssh://git@git02.int.nsc.ag:10022/research/fua/core/strings.git"
+    "url": "ssh://git@github.com:nicosResearchAndDevelopment/fua.core.strings.git"
   },
-  "author": "spetrac@nicos-ag.com",
-  "license": "UNLICENSED"
+  "author": "Simon Petrac <pfoerdie@gmail.com>",
+  "license": "MIT"
 }
